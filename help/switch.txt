@@ -1,0 +1,29 @@
+ return {
+             'GENERAL' : self.filterGeneral(),
+             'USER_NAME' : self.filterUser(),
+             'TABLE_NAME': self.filterTable(),
+             'TABLESPACE_NAME': self.filterTBS(),
+             'SEG_OWNER': self.filterSEGOW(),
+             'OPERATION': self.filterOP(),
+             'DATE': self.filterDate(),
+             'TIME': self.filterTime()
+        }.get(x, self.filterGeneral())
+
+  if x == 'GENERAL':
+            return self.filterGeneral()
+        elif x == 'USER_NAME':
+            return self.filterUser()
+        elif x == 'TABLE_NAME':    
+            return self.filterTable()
+        elif x == 'TABLESPACE_NAME':  
+            return self.filterTBS()
+        elif x == 'SEG_OWNER':
+            return self.filterSEGOW()
+        elif x == 'OPERATION':
+            return self.filterOP()
+        elif x == 'DATE': 
+            return self.filterDate()
+        elif x == 'TIME':
+            return self.filterTime()
+        else:
+            return self.filterGeneral()   

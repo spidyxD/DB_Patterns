@@ -3,7 +3,8 @@ PASOS PREVIOS:
 *despues de estar seguro de eso generas el archive y luego de eso haces una estrategia de respaldo
 *despues q se crea ya haces los pasos del logminer seleccionando el archive en q ud hizo los registros
 1-*VER ARCHIVE MAS RECIENTE
-SELECT NAME FROM V$ARCHIVED_LOG WHERE FIRST_TIME = (SELECT MAX(FIRST_TIME) FROM V$ARCHIVED_LOG); 
+SELECT NAME FROM V$ARCHIVED_LOG
+   WHERE FIRST_TIME = (SELECT MAX(FIRST_TIME) FROM V$ARCHIVED_LOG); 
 
 Ver los archives creados en cierto periodo de tiempo 
 select name, SEQUENCE#, to_char(FIRST_TIME, 'DD-Mon-YY HH24:Mi:SS') as TIME_Changes 
@@ -26,19 +27,18 @@ NOTA: OJO con el archive q se selecciona se debe de estar seguro q este contiene
 *USAR ESTE
 *para seleccionar un archive en especifico
 EXECUTE DBMS_LOGMNR.ADD_LOGFILE( -
-  LOGFILENAME => 'C:\GO\FlashRecoveryArea\GO\ARCHIVELOG\2018_10_19\O1_MF_1_36_FWLWTHFS_.ARC', -
+  LOGFILENAME => 'C:\GO\FLASHRECOVERYAREA\GO\ARCHIVELOG\2018_10_24\O1_MF_1_90_FX2HGH4J_.ARC', -
   OPTIONS => DBMS_LOGMNR.NEW);
 
 mutiples logfiles
 *O USAR ESTE
 EXECUTE DBMS_LOGMNR.ADD_LOGFILE(-
-   LOGFILENAME => 'C:\GO\FlashRecoveryArea\GO\ARCHIVELOG\2018_10_18\O1_MF_1_32_FWLVWJ8S_.ARC', -
+   LOGFILENAME => 'C:\GO\FLASHRECOVERYAREA\GO\ARCHIVELOG\2018_24_18\O1_MF_1_53_FWJC43NC_.ARC', -
        OPTIONS => DBMS_LOGMNR.NEW);
 EXECUTE DBMS_LOGMNR.ADD_LOGFILE(-
-   LOGFILENAME => 'C:\GO\FlashRecoveryArea\GO\ARCHIVELOG\2018_10_18\O1_MF_1_33_FWLVWLDY_.ARC');
-
+   LOGFILENAME => 'C:\GO\FLASHRECOVERYAREA\GO\ARCHIVELOG\2018_10_18\O1_MF_1_56_FWLOPJ40_.ARC');
 EXECUTE DBMS_LOGMNR.ADD_LOGFILE(-
-   LOGFILENAME => 'C:\GO\FLASHRECOVERYAREA\GO\ARCHIVELOG\2018_10_17\O1_MF_1_48_FWJ1SKNX_.ARC');
+   LOGFILENAME => 'C:\GO\FLASHRECOVERYAREA\GO\ARCHIVELOG\2018_10_18\O1_MF_1_52_FWJC1JH2_.ARC');
 
 *seleccionar los archives en un rango de tiempo   *O USAR ESTE
 ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;
@@ -110,5 +110,19 @@ col OPERATION for a10;
 SELECT timestamp, SESSION_INFO, substr(SQL_REDO ,1,80) SQL_REDO
 from v$logmnr_contents  where seg_owner='USER1'   and seg_name='T1'   and operation = 'INSERT';
 
+col SEQUENCE# for a10;
+col SEG_OWNER for a10;
+col SEG_NAME for a60;
+col USERNAME for a10;
+col OPERATION for a10;
+col TABLE_SPACE for a10;
+col SQL_REDO for a10;
+col SQL_UNDO for a10;
+col DATE_ for a10;
+col TIME for a10;
+SELECT SEQUENCE#,USERNAME, SEG_NAME, SEG_OWNER, TABLE_SPACE,TABLE_NAME,  OPERATION,SQL_REDO, SQL_UNDO, TIMESTAMP as DATE_, (XIDUSN || '.' || XIDSLT || '.' || XIDSQN) AS TIME_ FROM V$LOGMNR_CONTENTS;
+
+SELECT USERNAME,TABLE_SPACE,TABLE_NAME,SQL_REDO FROM V$LOGMNR_CONTENTS where username ='USER1';
 6-Para salir de logminer
 EXECUTE DBMS_LOGMNR.END_LOGMNR;
+
