@@ -1,0 +1,114 @@
+PASOS PREVIOS:
+*select *from v$log; pero tienes q estar seguro q en ese current hiciste los registros.
+*despues de estar seguro de eso generas el archive y luego de eso haces una estrategia de respaldo
+*despues q se crea ya haces los pasos del logminer seleccionando el archive en q ud hizo los registros
+1-*VER ARCHIVE MAS RECIENTE
+SELECT NAME FROM V$ARCHIVED_LOG WHERE FIRST_TIME = (SELECT MAX(FIRST_TIME) FROM V$ARCHIVED_LOG); 
+
+Ver los archives creados en cierto periodo de tiempo 
+select name, SEQUENCE#, to_char(FIRST_TIME, 'DD-Mon-YY HH24:Mi:SS') as TIME_Changes 
+from v$archived_log
+where to_char(FIRST_TIME, 'DD-Mon-YY HH24:Mi:SS') 
+between '17-Oct-18 15:00:00' and '18-Oct-18 01:00:10';
+
+
+ver fecha en que los archive se crearon 
+SELECT NAME, FIRST_TIME FROM V$ARCHIVED_LOG
+    WHERE SEQUENCE# = (SELECT MAX(SEQUENCE#) FROM V$ARCHIVED_LOG 
+    WHERE DICTIONARY_BEGIN = 'YES');
+
+ver archives en una fecha especifica
+SELECT FILENAME,to_char(LOW_TIME, 'DD-Mon-YY HH24:Mi:SS') name FROM V$LOGMNR_LOGS
+WHERE to_char(LOW_TIME, 'DD-Mon-YY HH24:Mi:SS') > '17-oct-2018 23:00:00';
+
+2-Una vez detectado el se escoge el log file a analizar.
+NOTA: OJO con el archive q se selecciona se debe de estar seguro q este contiene los registros q se desean analizar
+*USAR ESTE
+*para seleccionar un archive en especifico
+EXECUTE DBMS_LOGMNR.ADD_LOGFILE( -
+  LOGFILENAME => 'C:\GO\FlashRecoveryArea\GO\ARCHIVELOG\2018_10_19\O1_MF_1_36_FWLWTHFS_.ARC', -
+  OPTIONS => DBMS_LOGMNR.NEW);
+
+mutiples logfiles
+*O USAR ESTE
+EXECUTE DBMS_LOGMNR.ADD_LOGFILE(-
+   LOGFILENAME => 'C:\GO\FlashRecoveryArea\GO\ARCHIVELOG\2018_10_18\O1_MF_1_32_FWLVWJ8S_.ARC', -
+       OPTIONS => DBMS_LOGMNR.NEW);
+EXECUTE DBMS_LOGMNR.ADD_LOGFILE(-
+   LOGFILENAME => 'C:\GO\FlashRecoveryArea\GO\ARCHIVELOG\2018_10_18\O1_MF_1_33_FWLVWLDY_.ARC');
+
+EXECUTE DBMS_LOGMNR.ADD_LOGFILE(-
+   LOGFILENAME => 'C:\GO\FLASHRECOVERYAREA\GO\ARCHIVELOG\2018_10_17\O1_MF_1_48_FWJ1SKNX_.ARC');
+
+*seleccionar los archives en un rango de tiempo   *O USAR ESTE
+ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;
+EXECUTE DBMS_LOGMNR.START_LOGMNR(-
+   STARTTIME => to_date('17-Oct-2018 01:00:00','DD-MON-YYYY HH:MI:SS'), -
+     ENDTIME =>  to_date('18-Oct-2018 12:00:00','DD-MON-YYYY HH:MI:SS'), -
+     OPTIONS => DBMS_LOGMNR.DICT_FROM_ONLINE_CATALOG + -
+                DBMS_LOGMNR.COMMITTED_DATA_ONLY + -
+                DBMS_LOGMNR.PRINT_PRETTY_SQL + -
+                DBMS_LOGMNR.CONTINUOUS_MINE);
+
+ver el log seleccionado
+SELECT FILENAME name FROM V$LOGMNR_LOGS;
+
+3- Se inicia la sesion de LogMiner
+
+online catalog *USAR ESTE
+EXECUTE DBMS_LOGMNR.START_LOGMNR( -
+   OPTIONS => DBMS_LOGMNR.DICT_FROM_ONLINE_CATALOG + -
+              DBMS_LOGMNR.COMMITTED_DATA_ONLY + -
+              DBMS_LOGMNR.PRINT_PRETTY_SQL);
+
+crear diccionario propio debe de estar el modo supplemental activado * O  USAR ESTE
+ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;
+SELECT SUPPLEMENTAL_LOG_DATA_MIN FROM V$DATABASE;
+EXECUTE DBMS_LOGMNR_D.BUILD( -
+       OPTIONS=> DBMS_LOGMNR_D.STORE_IN_REDO_LOGS);
+
+
+
+//ALTER DATABASE DROP SUPPLEMENTAL LOG DATA;
+
+4-Para agregar formato a las consultas
+online catalog
+EXECUTE DBMS_LOGMNR.START_LOGMNR(OPTIONS => DBMS_LOGMNR.DICT_FROM_ONLINE_CATALOG);
+
+
+5-Ahora ya se puede revisar la vista V$LOGMNR_CONTENTS, la cual tendra comandos para rehacer cambios, comandos ejecutados, horario, etc
+ejemplo
+
+ver usuarios 
+ SELECT USERNAME FROM V$LOGMNR_CONTENTS;
+
+*ver todos 
+SELECT USERNAME AS usr,(XIDUSN || '.' || XIDSLT || '.' || XIDSQN) as XID, 
+   SQL_REDO FROM V$LOGMNR_CONTENTS 
+   WHERE SEG_OWNER IS NULL OR SEG_OWNER NOT IN ('SYS', 'SYSTEM');
+
+*filtrar por owner
+SELECT TIMESTAMP, (XIDUSN || '.' || XIDSLT || '.' || XIDSQN) AS XID, SQL_REDO FROM V$LOGMNR_CONTENTS WHERE SEG_OWNER = 'USER1';
+
+*ver registro realizado y desecho si hubo algun delete
+select sql_redo, sql_undo from v$logmnr_contents where username='SYS'
+o
+ SELECT username AS USR, (XIDUSN || '.' || XIDSLT || '.' ||  XIDSQN) AS XID,
+ SQL_REDO, SQL_UNDO FROM V$LOGMNR_CONTENTS WHERE username = 'SYS';
+
+ *para ver registros unicamente creados por los usuarios 
+col SEG_OWNER for a10;
+col SEG_NAME for a60;
+col USERNAME for a10;
+col OPERATION for a10;
+ select to_char(TIMESTAMP,'dd-mm-yyyy hh24:mi:ss') TIMESTAMP, SEG_OWNER, SEG_NAME, USERNAME, OPERATION, SESSION_INFO
+ from V$LOGMNR_CONTENTS
+ where SEG_OWNER not in ('SYS','SYSTEM','UNKNOWN')
+ and USERNAME <> 'UNKNOWN';
+
+*buscar registros de un usuario determinado en una tabla especifica
+SELECT timestamp, SESSION_INFO, substr(SQL_REDO ,1,80) SQL_REDO
+from v$logmnr_contents  where seg_owner='USER1'   and seg_name='T1'   and operation = 'INSERT';
+
+6-Para salir de logminer
+EXECUTE DBMS_LOGMNR.END_LOGMNR;

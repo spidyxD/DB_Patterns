@@ -1,0 +1,1 @@
+sqlplus system/manager as sysdba @borrar.sql
