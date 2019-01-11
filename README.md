@@ -1,4 +1,9 @@
 # DB_Patterns
+<image src="presentation" alt="image not avaible"><br>
+ <image src="presentation2" alt="image not avaible"><br>
+  <image src="presentation3" alt="image not avaible"><br>
+   <image src="presentation4" alt="image not avaible"><br>
+<p>
 1- Para utilizar la herramienta logminer se deberá tener activado el modo archive en la base de datos y además tener establecidos
 los archives que se utilizaran para el analisis en caso de no utilizar los archives se puede utilizar directamente los log files.
 
@@ -29,3 +34,4 @@ Operations
 General View
 
 7- Con esta información obtenida se podrán encontrar patrones en las transacciones realizadas por los usuarios, lo cual permitira encontrar posibles anomalias en la base de datos.
+</p>
